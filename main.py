@@ -9,7 +9,7 @@ from ebooklib import epub
 from bs4 import BeautifulSoup
 from deep_translator import GoogleTranslator
 
-BOT_TOKEN = "BOT_TOKENİNİ_BURAYA_YAPIŞTIR"
+BOT_TOKEN = "7367817226:AAHiNuJWZn8A1R4JzPI6ug0o1Ih4xImcROc"
 
 ADMINS = [
     7542599799,  # @Tomrisw
