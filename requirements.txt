@@ -1,9 +1,8 @@
 python-telegram-bot==20.6
 requests
+flask
 PyMuPDF
 ebooklib
 beautifulsoup4
-flask
 deep-translator
-fitz
-telegram
+
