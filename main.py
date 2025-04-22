@@ -3,8 +3,14 @@ keep_alive()
 
 import os
 import fitz  # PyMuPDF
-from telegram import Update, Document, Message
-from telegram.ext import ApplicationBuilder, MessageHandler, filters, CommandHandler, ContextTypes
+from telegram import Update, Document
+from telegram.ext import (
+    ApplicationBuilder,
+    MessageHandler,
+    filters,
+    CommandHandler,
+    ContextTypes,
+)
 from ebooklib import epub
 from bs4 import BeautifulSoup
 from deep_translator import GoogleTranslator
@@ -28,21 +34,23 @@ def admin_only(func):
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "📚 Merhaba! Bu bot kitap ve metin çevirisi yapar.\n\n"
-        "📝 Metin, 📄 PDF, 📘 EPUB ya da 📄 TXT dosyası gönder.\n"
+        "📚 Merhaba! Bu bot sadece komutla çeviri yapar.\n\n"
+        "💬 Çevirmek için:\n"
+        "→ /translate <metin>\n"
+        "→ veya bir mesaja yanıtlayıp sadece /translate yaz.\n\n"
         "🌍 Varsayılan dil: Türkçe\n"
-        "💬 Dil ayarlamak için: /language en (veya fr, ar, de...)\n"
-        "📌 Yanıtladığın mesajı çevirmek için: /translate"
+        "🌐 Değiştirmek için: /language en"
     )
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "📖 Yardım:\n"
-        "/start - Karşılama\n"
+        "📖 Komutlar:\n"
+        "/start - Bilgilendirme\n"
         "/language <dil_kodu> - Hedef dili ayarla (örn: /language en)\n"
-        "/translate <metin> - Metni çevir\n"
-        "/translate (yanıtla) - Yanıtlanan mesajı çevir\n"
-        "PDF, EPUB ya da TXT dosyası da gönderebilirsiniz.")
+        "/translate <metin> - Metni çevirir\n"
+        "/translate (yanıtla) - Yanıtlanan mesajı çevirir\n"
+        "PDF, EPUB ve TXT dosyalarını da destekler."
+    )
 
 async def set_language(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if context.args:
@@ -87,15 +95,6 @@ def extract_text_from_epub(file_path):
         return text
     except Exception as e:
         return f"[EPUB okuma hatası: {e}]"
-
-async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    target_lang = user_languages.get(user_id, "tr")
-    text = update.message.text
-
-    await update.message.reply_text("🌐 Çevriliyor...")
-    translated = translate_text(text, target_lang)
-    await update.message.reply_text(f"✅ Çeviri:\n\n{translated}")
 
 async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
@@ -144,24 +143,21 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await update.message.reply_text(f"⚠️ Hata oluştu: {e}")
 
-# ✅ /translate komutu: Yanıtlanan mesaj ya da direkt metni çevir
 async def translate_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     target_lang = user_languages.get(user_id, "tr")
+    message = update.message
 
-    # Yanıt varsa onu çevir
-    if update.message.reply_to_message and update.message.reply_to_message.text:
-        text_to_translate = update.message.reply_to_message.text
-    # Argüman varsa onu çevir
+    if message.reply_to_message and message.reply_to_message.text:
+        text_to_translate = message.reply_to_message.text
     elif context.args:
         text_to_translate = " ".join(context.args)
     else:
-        await update.message.reply_text("❗ Çevirmek için ya bir mesaja yanıt verin ya da metin yazın.\n\nÖrn:\n/translate Merhaba")
-        return
+        return  # Boşsa hiç cevap verme
 
-    await update.message.reply_text("🌐 Çevriliyor...")
+    await message.reply_text("🌐 Çevriliyor...")
     translated = translate_text(text_to_translate, target_lang)
-    await update.message.reply_text(f"✅ Çeviri:\n\n{translated}")
+    await message.reply_text(f"✅ Çeviri:\n\n{translated}")
 
 def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
@@ -172,7 +168,7 @@ def main():
     app.add_handler(CommandHandler("admin", admin_panel))
     app.add_handler(CommandHandler("translate", translate_command))
     app.add_handler(MessageHandler(filters.Document.ALL, handle_document))
-    app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), handle_text))
+    # ❌ Otomatik metin çevirisi kapalı
 
     print("🚀 Bot çalışıyor...")
     app.run_polling()
